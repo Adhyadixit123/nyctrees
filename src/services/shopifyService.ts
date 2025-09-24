@@ -10,6 +10,12 @@ export class ShopifyProductService {
             id
             title
             description
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
             images(first: 1) {
               edges {
                 node {
@@ -29,12 +35,6 @@ export class ShopifyProductService {
                   }
                   availableForSale
                 }
-              }
-            }
-            priceRange {
-              minVariantPrice {
-                amount
-                currencyCode
               }
             }
           }
@@ -248,24 +248,72 @@ export class ShopifyCartService {
 
       const response = await shopifyClient.request(query, { variables });
       console.log('Cart creation response:', response);
+      console.log('Full response data:', response.data);
 
       if (response.data?.cartCreate?.cart) {
         console.log('Cart created successfully:', response.data.cartCreate.cart.id);
         return response.data.cartCreate.cart.id;
       }
 
-      // Enhanced error handling
+      // Enhanced error handling - check if there are errors in the response
       const errors = response.data?.cartCreate?.errors;
-      if (errors && errors.length > 0) {
+      console.log('Raw errors from response:', errors);
+
+      if (errors && Array.isArray(errors) && errors.length > 0) {
         console.error('Cart creation errors:', errors);
         // Show detailed error messages
         errors.forEach((error: any, index: number) => {
-          console.error(`Error ${index + 1}:`, error.code, error.message);
+          console.error(`Error ${index + 1}:`, {
+            code: error.code,
+            message: error.message,
+            field: error.field,
+            ...error
+          });
         });
-      } else {
-        console.error('Cart creation failed but no specific errors returned');
+
+        // Also show errors in alert for immediate visibility
+        alert(`Cart creation failed: ${errors.map((e: any) => e.message).join(', ')}`);
+
+        return null;
       }
 
+      // Check for user errors (different structure)
+      if (response.data?.cartCreate?.userErrors) {
+        const userErrors = response.data.cartCreate.userErrors;
+        console.error('Cart creation user errors:', userErrors);
+        // Handle different user error structures
+        if (Array.isArray(userErrors)) {
+          userErrors.forEach((error: any, index: number) => {
+            console.error(`User Error ${index + 1}:`, error);
+          });
+          alert(`Cart creation failed: ${userErrors.map((e: any) => e.message).join(', ')}`);
+        } else {
+          console.error('User Error:', userErrors);
+          alert(`Cart creation failed: ${userErrors.message || 'User error'}`);
+        }
+        return null;
+      }
+
+      // Check for GraphQL errors
+      if (response.errors) {
+        console.error('GraphQL errors:', response.errors);
+        // Handle different error structures
+        if (Array.isArray(response.errors)) {
+          response.errors.forEach((error: any, index: number) => {
+            console.error(`GraphQL Error ${index + 1}:`, error);
+          });
+          alert(`Cart creation failed: ${response.errors.map((e: any) => e.message || 'Unknown error').join(', ')}`);
+        } else {
+          console.error('GraphQL Error:', response.errors);
+          alert(`Cart creation failed: ${response.errors.message || 'GraphQL error'}`);
+        }
+        return null;
+      }
+
+      console.error('Cart creation failed but no specific errors found in response');
+      console.error('Full response structure:', JSON.stringify(response, null, 2));
+
+      alert('Cart creation failed: Unknown error - check console for details');
       return null;
     } catch (error: any) {
       console.error('Error creating cart:', error);
@@ -276,11 +324,16 @@ export class ShopifyCartService {
       }
       if (error.response) {
         console.error('Error response:', error.response);
+        console.error('Error response data:', error.response.data);
       }
       if (error.graphQLErrors) {
         console.error('GraphQL errors:', error.graphQLErrors);
       }
+      if (error.networkError) {
+        console.error('Network error:', error.networkError);
+      }
 
+      alert(`Cart creation failed: ${error.message || 'Network error'}`);
       return null;
     }
   }
