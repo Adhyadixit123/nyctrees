@@ -24,12 +24,3 @@
   for = "*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/.netlify/functions/shopify/*"
-  to = "/.netlify/functions/shopify"
-  status = 200
