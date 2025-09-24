@@ -105,11 +105,20 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
             <h1 className="text-2xl font-bold text-foreground">
               {isCartSummaryStep ? 'Review Your Order' : 'Customize Your Order'}
             </h1>
-            <Badge variant="secondary">
-              Step {currentStep + 1} of {steps.length}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="px-3 py-1">
+                Step {currentStep + 1} of {steps.length}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {steps.length - currentStep - 1} more steps to checkout
+              </span>
+            </div>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-3" />
+          <div className="flex justify-between text-xs text-muted-foreground mt-2">
+            <span>Product Selection</span>
+            <span>Review & Checkout</span>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

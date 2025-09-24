@@ -12,7 +12,12 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const [selectedVariant, setSelectedVariant] = useState(product.variants[0]?.id || '');
+  // Only use variant selection if there are multiple variants
+  const hasMultipleVariants = product.variants.length > 1;
+
+  // If there's only one variant, use it directly
+  const defaultVariantId = product.variants.length > 0 ? product.variants[0].id : '';
+  const [selectedVariant, setSelectedVariant] = useState(defaultVariantId);
 
   const selectedVariantData = product.variants.find(v => v.id === selectedVariant);
   const finalPrice = product.basePrice + (selectedVariantData?.priceModifier || 0);
@@ -22,6 +27,53 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       onAddToCart(product, selectedVariant);
     }
   };
+
+  // Don't render if no variants are available
+  if (product.variants.length === 0) {
+    return (
+      <Card className="overflow-hidden shadow-lg border-0 bg-card">
+        <div className="relative">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-80 object-cover"
+          />
+          <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
+            Best Seller
+          </Badge>
+        </div>
+
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="w-4 h-4 fill-warning text-warning" />
+            ))}
+            <span className="text-sm text-muted-foreground">(2,847 reviews)</span>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">{product.name}</h2>
+            <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-3xl font-bold text-foreground">${finalPrice}</span>
+              </div>
+            </div>
+
+            <Button
+              disabled
+              className="w-full bg-muted text-muted-foreground cursor-not-allowed"
+            >
+              Product Unavailable
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="overflow-hidden shadow-lg border-0 bg-card">
@@ -35,7 +87,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           Best Seller
         </Badge>
       </div>
-      
+
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           {[...Array(5)].map((_, i) => (
@@ -46,37 +98,40 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">{product.name}</h2>
-          <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+          {/* Product description hidden as requested */}
         </div>
 
         <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium text-foreground">Select Variant</label>
-            <Select value={selectedVariant} onValueChange={setSelectedVariant}>
-              <SelectTrigger className="w-full mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {product.variants.map((variant) => (
-                  <SelectItem key={variant.id} value={variant.id}>
-                    <div className="flex justify-between items-center w-full">
-                      <span>{variant.value}</span>
-                      {variant.priceModifier > 0 && (
-                        <span className="text-sm text-muted-foreground ml-2">
-                          +${variant.priceModifier}
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Only show variant selector if there are multiple variants */}
+          {hasMultipleVariants && (
+            <div>
+              <label className="text-sm font-medium text-foreground">Select Variant</label>
+              <Select value={selectedVariant} onValueChange={setSelectedVariant}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.variants.map((variant) => (
+                    <SelectItem key={variant.id} value={variant.id}>
+                      <div className="flex justify-between items-center w-full">
+                        <span>{variant.value}</span>
+                        {variant.priceModifier > 0 && (
+                          <span className="text-sm text-muted-foreground ml-2">
+                            +${variant.priceModifier}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div>
               <span className="text-3xl font-bold text-foreground">${finalPrice}</span>
-              {selectedVariantData?.priceModifier ? (
+              {selectedVariantData?.priceModifier && hasMultipleVariants ? (
                 <span className="text-sm text-muted-foreground ml-2 line-through">
                   ${product.basePrice}
                 </span>
@@ -88,6 +143,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             onClick={handleAddToCart}
             className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground font-medium py-3 transition-all duration-normal shadow-primary"
             size="lg"
+            disabled={!selectedVariant}
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
             Add to Cart

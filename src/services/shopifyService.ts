@@ -197,18 +197,28 @@ export class ShopifyProductService {
     const basePrice = parseFloat(shopifyProduct.priceRange.minVariantPrice.amount);
     const imageUrl = shopifyProduct.images.edges[0]?.node.url || '';
 
+    // Handle products with no variants
+    const variants = shopifyProduct.variants.edges.length > 0
+      ? shopifyProduct.variants.edges.map((edge: any) => ({
+          id: edge.node.id,
+          name: 'Variant',
+          value: edge.node.title,
+          priceModifier: parseFloat(edge.node.price.amount) - basePrice
+        }))
+      : [{
+          id: shopifyProduct.id, // Use product ID as fallback if no variants
+          name: 'Default',
+          value: 'Default',
+          priceModifier: 0
+        }];
+
     return {
       id: shopifyProduct.id,
       name: shopifyProduct.title,
       description: shopifyProduct.description,
       basePrice,
       image: imageUrl,
-      variants: shopifyProduct.variants.edges.map((edge: any) => ({
-        id: edge.node.id,
-        name: 'Variant',
-        value: edge.node.title,
-        priceModifier: parseFloat(edge.node.price.amount) - basePrice
-      }))
+      variants
     };
   }
 }
@@ -294,22 +304,6 @@ export class ShopifyCartService {
         return null;
       }
 
-      // Check for GraphQL errors
-      if (response.errors) {
-        console.error('GraphQL errors:', response.errors);
-        // Handle different error structures
-        if (Array.isArray(response.errors)) {
-          response.errors.forEach((error: any, index: number) => {
-            console.error(`GraphQL Error ${index + 1}:`, error);
-          });
-          alert(`Cart creation failed: ${response.errors.map((e: any) => e.message || 'Unknown error').join(', ')}`);
-        } else {
-          console.error('GraphQL Error:', response.errors);
-          alert(`Cart creation failed: ${response.errors.message || 'GraphQL error'}`);
-        }
-        return null;
-      }
-
       console.error('Cart creation failed but no specific errors found in response');
       console.error('Full response structure:', JSON.stringify(response, null, 2));
 
@@ -326,11 +320,15 @@ export class ShopifyCartService {
         console.error('Error response:', error.response);
         console.error('Error response data:', error.response.data);
       }
-      if (error.graphQLErrors) {
+      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
         console.error('GraphQL errors:', error.graphQLErrors);
+        // Show GraphQL errors to user
+        const errorMessages = error.graphQLErrors.map((e: any) => e.message).join(', ');
+        alert(`Cart creation failed: ${errorMessages}`);
       }
       if (error.networkError) {
         console.error('Network error:', error.networkError);
+        alert('Cart creation failed: Network error - check your connection');
       }
 
       alert(`Cart creation failed: ${error.message || 'Network error'}`);

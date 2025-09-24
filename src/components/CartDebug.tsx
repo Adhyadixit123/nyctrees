@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShopifyCartService } from '@/services/shopifyService';
+import { ShopifyCartService, ShopifyProductService } from '@/services/shopifyService';
 
 export function CartDebug() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -10,9 +10,17 @@ export function CartDebug() {
   const testCartCreation = async () => {
     setIsTesting(true);
     try {
-      // Test with a sample variant ID format
-      const testVariantId = 'gid://shopify/ProductVariant/123456789';
+      // Get a valid product variant ID from the store
+      const testVariantId = await ShopifyProductService.getFirstAvailableVariantId();
       console.log('Testing cart creation with variant ID:', testVariantId);
+
+      if (!testVariantId) {
+        setDebugInfo({
+          error: 'No available product variants found',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
 
       const cartId = await ShopifyCartService.createCart(testVariantId, 1);
       console.log('Test cart creation result:', cartId);

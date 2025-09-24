@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { ProductCard } from '@/components/ProductCard';
 import { CheckoutFlow } from '@/components/CheckoutFlow';
+import { CartDebug } from '@/components/CartDebug';
 import { OrderComplete } from '@/components/OrderComplete';
 import { CartButton } from '@/components/CartButton';
-import { CartDebug } from '@/components/CartDebug';
-import { useCart } from '@/hooks/useCart';
 import { ShopifyProductService } from '@/services/shopifyService';
-import { Product } from '@/types/checkout';
+import { useCart } from '@/hooks/useCart';
+import { Product, CheckoutStep } from '@/types/checkout';
 
 type AppState = 'product' | 'checkout' | 'complete';
 
@@ -123,6 +126,17 @@ const Index = () => {
               Brooklyn Christmas Tree Delivery
             </h1>
             <div className="flex items-center gap-4">
+              {/* Progress indicator for checkout flow */}
+              {appState === 'checkout' && checkoutSteps.length > 0 && (
+                <div className="hidden md:flex items-center gap-3">
+                  <Badge variant="secondary" className="px-3 py-1">
+                    Step 1 of {checkoutSteps.length + 1}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {checkoutSteps.length} more steps to checkout
+                  </span>
+                </div>
+              )}
               <CartButton
                 onCartClick={handleCartClick}
                 onStoreClick={handleStoreClick}

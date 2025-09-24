@@ -10,7 +10,7 @@ if (!storeDomain || !accessToken) {
 export const shopifyClient = createStorefrontApiClient({
   storeDomain,
   publicAccessToken: accessToken,
-  apiVersion: '2025-01', // Try a different API version
+  apiVersion: '2024-10', // Use a stable API version
 });
 
 export interface ShopifyProduct {
