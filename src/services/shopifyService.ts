@@ -216,6 +216,8 @@ export class ShopifyProductService {
 export class ShopifyCartService {
   static async createCart(productVariantId: string, quantity: number = 1): Promise<string | null> {
     try {
+      console.log('Creating cart with productVariantId:', productVariantId, 'quantity:', quantity);
+
       const query = `
         mutation CreateCart($input: CartInput!) {
           cartCreate(input: $input) {
@@ -242,22 +244,51 @@ export class ShopifyCartService {
         }
       };
 
+      console.log('Cart creation variables:', variables);
+
       const response = await shopifyClient.request(query, { variables });
+      console.log('Cart creation response:', response);
 
       if (response.data?.cartCreate?.cart) {
+        console.log('Cart created successfully:', response.data.cartCreate.cart.id);
         return response.data.cartCreate.cart.id;
       }
 
-      console.error('Cart creation errors:', response.data?.cartCreate?.errors);
+      // Enhanced error handling
+      const errors = response.data?.cartCreate?.errors;
+      if (errors && errors.length > 0) {
+        console.error('Cart creation errors:', errors);
+        // Show detailed error messages
+        errors.forEach((error: any, index: number) => {
+          console.error(`Error ${index + 1}:`, error.code, error.message);
+        });
+      } else {
+        console.error('Cart creation failed but no specific errors returned');
+      }
+
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating cart:', error);
+
+      // Enhanced error logging
+      if (error.message) {
+        console.error('Error message:', error.message);
+      }
+      if (error.response) {
+        console.error('Error response:', error.response);
+      }
+      if (error.graphQLErrors) {
+        console.error('GraphQL errors:', error.graphQLErrors);
+      }
+
       return null;
     }
   }
 
   static async addToCart(cartId: string, productVariantId: string, quantity: number = 1): Promise<boolean> {
     try {
+      console.log('Adding to cart - cartId:', cartId, 'productVariantId:', productVariantId, 'quantity:', quantity);
+
       const query = `
         mutation AddToCart($cartId: ID!, $lines: [CartLineInput!]!) {
           cartLinesAdd(cartId: $cartId, lines: $lines) {
@@ -282,16 +313,42 @@ export class ShopifyCartService {
         ]
       };
 
+      console.log('Add to cart variables:', variables);
+
       const response = await shopifyClient.request(query, { variables });
+      console.log('Add to cart response:', response);
 
       if (response.data?.cartLinesAdd?.cart) {
+        console.log('Product added to cart successfully');
         return true;
       }
 
-      console.error('Add to cart errors:', response.data?.cartLinesAdd?.errors);
+      // Enhanced error handling
+      const errors = response.data?.cartLinesAdd?.errors;
+      if (errors && errors.length > 0) {
+        console.error('Add to cart errors:', errors);
+        errors.forEach((error: any, index: number) => {
+          console.error(`Error ${index + 1}:`, error.code, error.message);
+        });
+      } else {
+        console.error('Add to cart failed but no specific errors returned');
+      }
+
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
+
+      // Enhanced error logging
+      if (error.message) {
+        console.error('Error message:', error.message);
+      }
+      if (error.response) {
+        console.error('Error response:', error.response);
+      }
+      if (error.graphQLErrors) {
+        console.error('GraphQL errors:', error.graphQLErrors);
+      }
+
       return false;
     }
   }

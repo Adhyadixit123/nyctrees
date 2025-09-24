@@ -8,30 +8,59 @@ export function useCart() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [allAddOns, setAllAddOns] = useState<AddOn[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadCart = useCallback(async (id: string) => {
-    const cart = await ShopifyCartService.getCart(id);
-    setShopifyCart(cart);
+    try {
+      const cart = await ShopifyCartService.getCart(id);
+      if (cart) {
+        setShopifyCart(cart);
+        setError(null);
+      } else {
+        setError('Failed to load cart');
+      }
+    } catch (error) {
+      console.error('Error loading cart:', error);
+      setError('Error loading cart');
+    }
   }, []);
 
   const updateProductSelection = useCallback(async (product: Product, variantId: string) => {
     setSelectedProduct(product);
     setIsLoading(true);
+    setError(null);
 
     try {
+      console.log('Updating product selection with variantId:', variantId);
+      console.log('Product variants:', product.variants);
+
+      // The variantId passed from ProductCard should already be the Shopify variant ID
+      // Let's use it directly since it's coming from the Shopify API
+      const actualVariantId = variantId;
+
+      console.log('Using Shopify variant ID:', actualVariantId);
+
       // Create or update cart with the selected product
       if (cartId) {
-        await ShopifyCartService.addToCart(cartId, variantId, 1);
-        await loadCart(cartId);
+        const success = await ShopifyCartService.addToCart(cartId, actualVariantId, 1);
+        if (success) {
+          await loadCart(cartId);
+        } else {
+          setError('Failed to add product to cart');
+        }
       } else {
-        const newCartId = await ShopifyCartService.createCart(variantId, 1);
+        console.log('Creating new cart...');
+        const newCartId = await ShopifyCartService.createCart(actualVariantId, 1);
         if (newCartId) {
           setCartId(newCartId);
           await loadCart(newCartId);
+        } else {
+          setError('Failed to create cart');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating product selection:', error);
+      setError(error.message || 'Error updating product selection');
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +118,7 @@ export function useCart() {
     getOrderSummary,
     getCheckoutUrl,
     isLoading,
+    error,
     setAllAddOns
   };
 }

@@ -9,13 +9,20 @@ interface CartButtonProps {
 }
 
 export function CartButton({ onCartClick, onStoreClick }: CartButtonProps) {
-  const { shopifyCart, getCheckoutUrl } = useCart();
+  const { shopifyCart, getCheckoutUrl, error } = useCart();
   const checkoutUrl = getCheckoutUrl();
 
   const itemCount = shopifyCart?.lines?.edges?.length || 0;
 
   return (
     <div className="flex items-center gap-3">
+      {/* Error Display */}
+      {error && (
+        <div className="text-sm text-red-500 bg-red-50 px-2 py-1 rounded">
+          Cart Error: {error}
+        </div>
+      )}
+
       {/* Store Link */}
       <Button
         variant="outline"
