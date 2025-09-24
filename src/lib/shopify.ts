@@ -7,15 +7,51 @@ if (!storeDomain || !accessToken) {
   throw new Error('Missing Shopify environment variables');
 }
 
-// Use cors-anywhere.herokuapp.com as primary (it works!)
-const corsProxy = 'https://cors-anywhere.herokuapp.com';
-const actualStoreDomain = `${corsProxy}/${storeDomain}/api/2025-10`;
+// We will use two strategies:
+// - Development: talk to Shopify via a local proxy (http://localhost:3001) to avoid CORS
+// - Production (Netlify): route through Netlify Function to avoid CORS entirely
 
-export const shopifyClient = createStorefrontApiClient({
-  storeDomain: actualStoreDomain,
-  publicAccessToken: accessToken,
-  apiVersion: '2025-10',
-});
+const API_VERSION = '2025-10';
+const isDev = import.meta.env.DEV;
+
+// Custom fetch for Netlify Function. The Storefront client will pass a URL and init.
+// We ignore the URL and forward to our Netlify Function endpoint instead.
+const netlifyFunctionFetch: typeof fetch = async (_url, init) => {
+  // Clone and sanitize headers: remove Shopify token header added by SDK
+  const headers = new Headers(init?.headers || {});
+  headers.delete('X-Shopify-Storefront-Access-Token');
+  headers.set('Content-Type', 'application/json');
+
+  const fnUrl = `/.netlify/functions/shopify/api/${API_VERSION}/graphql.json`;
+  return fetch(fnUrl, { ...(init || {}), headers });
+};
+
+// Build the client differently per environment
+export const shopifyClient = isDev
+  ? createStorefrontApiClient({
+      // Local dev: hit local proxy server started by `npm run api` (proxy-api.js)
+      // If you prefer direct Shopify in dev with Vite proxy, update this base accordingly.
+      storeDomain: 'localhost:3001',
+      publicAccessToken: accessToken,
+      apiVersion: API_VERSION,
+      // Force http scheme when using a non-https dev proxy domain
+      // The SDK uses https by default; we override by prefixing scheme via customFetch
+      customFetchApi: async (url, init) => {
+        // Rewrite target to local proxy
+        const devUrl = `http://localhost:3001/api/${API_VERSION}/graphql.json`;
+        const headers = new Headers(init?.headers || {});
+        headers.set('Content-Type', 'application/json');
+        return fetch(devUrl, { ...(init || {}), headers });
+      },
+    })
+  : createStorefrontApiClient({
+      // Production: real store domain (used only for SDK internals),
+      // but we override the actual network call via customFetchApi to the Netlify Function.
+      storeDomain,
+      publicAccessToken: accessToken,
+      apiVersion: API_VERSION,
+      customFetchApi: netlifyFunctionFetch,
+    });
 
 export interface ShopifyProduct {
   id: string;
