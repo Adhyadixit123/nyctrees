@@ -30,9 +30,41 @@ This is a modern React-based checkout system that integrates seamlessly with Sho
    npm run dev:full
    ```
 
-### Option 2: Direct Shopify Connection (Production)
+## Netlify Deployment
 
-For production builds, the app connects directly to Shopify without a proxy.
+### Environment Variables Setup
+
+Make sure to add these environment variables in your Netlify dashboard:
+
+1. Go to **Site Settings** → **Environment Variables**
+2. Add the following variables:
+   ```
+   VITE_SHOPIFY_STORE_DOMAIN=brooklyn-tres.myshopify.com
+   VITE_SHOPIFY_ACCESS_TOKEN=b4e113af808dbf008ab651c525f312b4
+   VITE_SHOPIFY_API_KEY=f98eeb27a8c46d089b9fe6db7335e857
+   VITE_SHOPIFY_API_SECRET=f48a9a61618ecd3f4c0ec8035bb734bd
+   ```
+
+### Production Configuration
+
+The application automatically detects the environment:
+- **Development**: Uses local proxy server (port 3001) to bypass CORS
+- **Production**: Connects directly to Shopify API
+
+### Troubleshooting Netlify Deployment
+
+If you encounter CORS issues in production:
+
+1. **Check Environment Variables**: Ensure all Shopify credentials are correctly set
+2. **Verify Store Domain**: Make sure the domain matches your Shopify store
+3. **Check Access Token**: Ensure the Storefront Access Token has the required permissions
+
+### Required Shopify API Scopes
+
+Make sure your Shopify app has these API scopes enabled:
+- `read_products`
+- `read_customers`
+- `write_checkouts`
 
 ## CORS Solution
 

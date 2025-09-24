@@ -1,14 +1,20 @@
 import { createStorefrontApiClient } from '@shopify/storefront-api-client';
 
-const storeDomain = 'http://localhost:3001/api/2025-10';
+const storeDomain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
 const accessToken = import.meta.env.VITE_SHOPIFY_ACCESS_TOKEN;
 
 if (!storeDomain || !accessToken) {
   throw new Error('Missing Shopify environment variables');
 }
 
+// Use direct Shopify API for production, local proxy for development
+const isDevelopment = import.meta.env.DEV;
+const actualStoreDomain = isDevelopment
+  ? 'http://localhost:3001/api/2025-10'
+  : `${storeDomain}/api/2025-10`;
+
 export const shopifyClient = createStorefrontApiClient({
-  storeDomain,
+  storeDomain: actualStoreDomain,
   publicAccessToken: accessToken,
   apiVersion: '2025-10',
 });
