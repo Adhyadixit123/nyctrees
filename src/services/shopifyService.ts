@@ -235,9 +235,10 @@ export class ShopifyCartService {
               id
               checkoutUrl
             }
-            errors {
+            userErrors {
               code
               message
+              field
             }
           }
         }
@@ -266,7 +267,7 @@ export class ShopifyCartService {
       }
 
       // Enhanced error handling - check if there are errors in the response
-      const errors = response.data?.cartCreate?.errors;
+      const errors = response.data?.cartCreate?.userErrors;
       console.log('Raw errors from response:', errors);
 
       if (errors && Array.isArray(errors) && errors.length > 0) {
@@ -346,9 +347,10 @@ export class ShopifyCartService {
             cart {
               id
             }
-            errors {
+            userErrors {
               code
               message
+              field
             }
           }
         }
@@ -375,7 +377,7 @@ export class ShopifyCartService {
       }
 
       // Enhanced error handling
-      const errors = response.data?.cartLinesAdd?.errors;
+      const errors = response.data?.cartLinesAdd?.userErrors;
       if (errors && errors.length > 0) {
         console.error('Add to cart errors:', errors);
         errors.forEach((error: any, index: number) => {
@@ -412,9 +414,10 @@ export class ShopifyCartService {
             cart {
               id
             }
-            errors {
+            userErrors {
               code
               message
+              field
             }
           }
         }
@@ -436,7 +439,7 @@ export class ShopifyCartService {
         return true;
       }
 
-      console.error('Update cart errors:', response.data?.cartLinesUpdate?.errors);
+      console.error('Update cart errors:', response.data?.cartLinesUpdate?.userErrors);
       return false;
     } catch (error) {
       console.error('Error updating cart item:', error);
@@ -452,9 +455,10 @@ export class ShopifyCartService {
             cart {
               id
             }
-            errors {
+            userErrors {
               code
               message
+              field
             }
           }
         }
@@ -471,7 +475,7 @@ export class ShopifyCartService {
         return true;
       }
 
-      console.error('Remove from cart errors:', response.data?.cartLinesRemove?.errors);
+      console.error('Remove from cart errors:', response.data?.cartLinesRemove?.userErrors);
       return false;
     } catch (error) {
       console.error('Error removing from cart:', error);
