@@ -76,13 +76,71 @@ npm run api
 npm run dev
 ```
 
-## Troubleshooting Netlify Deployment
+## 🚨 IMMEDIATE TROUBLESHOOTING
 
-### If you still get CORS errors:
+### If you're still getting CORS errors on Netlify:
 
-1. **Check Environment Variables**: Ensure all Shopify credentials are correctly set
-2. **Verify CORS Proxy**: The proxy service might be temporarily down
-3. **Try Backend API**: Deploy the included `proxy-api.js` as a separate service
+1. **Check if Netlify has deployed the latest code**:
+   - Go to your Netlify dashboard
+   - Look for recent deployments
+   - Trigger a manual redeploy if needed
+
+2. **Test CORS proxies directly**:
+   - Open `test-cors.html` in your browser
+   - Run the test to see which proxy works
+   - Update the configuration if needed
+
+3. **Try the backend API solution** (most reliable):
+   - Deploy `proxy-api.js` to Railway, Heroku, or Vercel
+   - Update the Shopify client to use your backend URL
+
+### Quick Fix - Update Your Netlify Environment Variables
+
+If the deployment hasn't picked up the latest changes, manually update the client-side configuration:
+
+1. **In your Netlify dashboard**, go to **Site Settings** → **Environment Variables**
+2. **Add or update**:
+   ```
+   VITE_SHOPIFY_STORE_DOMAIN=https://brooklyn-tres.myshopify.com
+   VITE_SHOPIFY_ACCESS_TOKEN=b4e113af808dbf008ab651c525f312b4
+   ```
+
+3. **Trigger a redeploy** from the **Deploys** tab
+
+### Alternative: Backend API Solution
+
+**Most Reliable Option:**
+
+1. **Deploy the backend API**:
+   ```bash
+   # Deploy proxy-api.js to Railway, Heroku, or Vercel
+   # Set environment variable: SHOPIFY_ACCESS_TOKEN=your_token
+   ```
+
+2. **Update the Shopify client** to use your backend URL:
+   ```javascript
+   const actualStoreDomain = 'https://your-backend-api.herokuapp.com/api/2025-10';
+   ```
+
+### Debug Steps:
+
+1. **Check browser console** for detailed error messages
+2. **Verify environment variables** are set correctly in Netlify
+3. **Test the API directly** using the test file
+4. **Try different CORS proxy services** if needed
+
+## Understanding the CORS Error
+
+**The error occurs because:**
+- Your Netlify app (`https://ojasda.netlify.app`) is trying to access Shopify's API
+- Shopify doesn't allow cross-origin requests for security reasons
+- The browser blocks the request before it reaches Shopify
+
+**Solutions in order of reliability:**
+1. ✅ **CORS Proxy Service** (current implementation)
+2. ✅ **Backend API Proxy** (most reliable)
+3. ✅ **Shopify App Bridge** (requires Shopify app setup)
+4. ❌ **Direct API calls** (blocked by CORS)
 
 ### Required Shopify API Scopes
 

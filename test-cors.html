@@ -1,0 +1,57 @@
+/**
+ * Test CORS proxy services to see which ones are working
+ * Run this in your browser console to test connectivity
+ */
+
+const testCorsProxies = async () => {
+  const shopifyDomain = 'brooklyn-tres.myshopify.com';
+  const corsProxies = [
+    'https://api.allorigins.win/raw?url=https://' + shopifyDomain,
+    'https://cors-anywhere.herokuapp.com/' + shopifyDomain,
+    'https://corsproxy.io/?' + shopifyDomain
+  ];
+
+  const testQuery = `
+    query {
+      shop {
+        name
+      }
+    }
+  `;
+
+  console.log('Testing CORS proxy services...');
+
+  for (let i = 0; i < corsProxies.length; i++) {
+    const proxyUrl = `${corsProxies[i]}/api/2025-10/graphql.json`;
+    const accessToken = 'b4e113af808dbf008ab651c525f312b4'; // Use your actual token
+
+    try {
+      console.log(`\n🧪 Testing proxy ${i + 1}: ${corsProxies[i]}`);
+
+      const response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': accessToken,
+        },
+        body: JSON.stringify({ query: testQuery }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Proxy ${i + 1} WORKING!`, data);
+        return corsProxies[i]; // Return the working proxy
+      } else {
+        console.log(`❌ Proxy ${i + 1} failed with status:`, response.status);
+      }
+    } catch (error) {
+      console.log(`❌ Proxy ${i + 1} error:`, error.message);
+    }
+  }
+
+  console.log('\n🔥 All proxies failed. Consider deploying a backend API.');
+  return null;
+};
+
+// Run the test
+testCorsProxies();
