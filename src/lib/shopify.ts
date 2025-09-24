@@ -7,11 +7,9 @@ if (!storeDomain || !accessToken) {
   throw new Error('Missing Shopify environment variables');
 }
 
-// Use direct Shopify API for production, local proxy for development
-const isDevelopment = import.meta.env.DEV;
-const actualStoreDomain = isDevelopment
-  ? 'http://localhost:3001/api/2025-10'
-  : `${storeDomain}/api/2025-10`;
+// Use a reliable CORS proxy service
+const corsProxy = 'https://api.allorigins.win/raw?url=https://' + storeDomain;
+const actualStoreDomain = `${corsProxy}/api/2025-10`;
 
 export const shopifyClient = createStorefrontApiClient({
   storeDomain: actualStoreDomain,

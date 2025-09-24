@@ -47,17 +47,42 @@ Make sure to add these environment variables in your Netlify dashboard:
 
 ### Production Configuration
 
-The application automatically detects the environment:
-- **Development**: Uses local proxy server (port 3001) to bypass CORS
-- **Production**: Connects directly to Shopify API
+The application uses a CORS proxy service to bypass Shopify's CORS restrictions:
 
-### Troubleshooting Netlify Deployment
+- **CORS Proxy**: `https://api.allorigins.win` - Handles Shopify API requests in production
+- **Direct Connection**: Works without CORS issues through the proxy
 
-If you encounter CORS issues in production:
+## Backend API Solution (Alternative)
+
+If the CORS proxy doesn't work reliably, you can deploy a simple backend API:
+
+### Deploy Backend API to Heroku/Vercel/Railway
+
+1. **Create a new repository** for the backend API
+2. **Upload `proxy-api.js`** to your backend hosting service
+3. **Set environment variable**:
+   ```
+   SHOPIFY_ACCESS_TOKEN=b4e113af808dbf008ab651c525f312b4
+   ```
+4. **Update the Shopify client** to point to your backend API URL
+
+### Local Development with Backend API
+
+```bash
+# Start the backend API
+npm run api
+
+# Start the frontend (in another terminal)
+npm run dev
+```
+
+## Troubleshooting Netlify Deployment
+
+### If you still get CORS errors:
 
 1. **Check Environment Variables**: Ensure all Shopify credentials are correctly set
-2. **Verify Store Domain**: Make sure the domain matches your Shopify store
-3. **Check Access Token**: Ensure the Storefront Access Token has the required permissions
+2. **Verify CORS Proxy**: The proxy service might be temporarily down
+3. **Try Backend API**: Deploy the included `proxy-api.js` as a separate service
 
 ### Required Shopify API Scopes
 
@@ -65,6 +90,18 @@ Make sure your Shopify app has these API scopes enabled:
 - `read_products`
 - `read_customers`
 - `write_checkouts`
+
+### Alternative CORS Solutions
+
+1. **Use a different CORS proxy**:
+   ```javascript
+   const corsProxy = 'https://cors-anywhere.herokuapp.com';
+   const actualStoreDomain = `${corsProxy}/${storeDomain}/api/2025-10`;
+   ```
+
+2. **Deploy your own proxy server** using the included `proxy-api.js`
+
+3. **Configure Shopify to allow your domain** (requires Shopify Plus)
 
 ## CORS Solution
 
