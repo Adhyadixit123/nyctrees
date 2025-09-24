@@ -42,19 +42,26 @@ export function useCart() {
 
       // Create or update cart with the selected product
       if (cartId) {
+        console.log('Adding to existing cart:', cartId);
         const success = await ShopifyCartService.addToCart(cartId, actualVariantId, 1);
         if (success) {
+          console.log('Product added to cart successfully');
           await loadCart(cartId);
+          console.log('Cart reloaded after adding product');
         } else {
+          console.error('Failed to add product to cart');
           setError('Failed to add product to cart');
         }
       } else {
         console.log('Creating new cart...');
         const newCartId = await ShopifyCartService.createCart(actualVariantId, 1);
         if (newCartId) {
+          console.log('New cart created:', newCartId);
           setCartId(newCartId);
           await loadCart(newCartId);
+          console.log('Cart loaded after creation');
         } else {
+          console.error('Failed to create cart');
           setError('Failed to create cart');
         }
       }

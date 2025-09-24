@@ -20,12 +20,19 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [stepProducts, setStepProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const { shopifyCart, addAddOn, removeAddOn, getOrderSummary, getCheckoutUrl, isLoading } = useCart();
+  const { shopifyCart, addAddOn, removeAddOn, getOrderSummary, getCheckoutUrl, isLoading, updateProductSelection } = useCart();
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
   const orderSummary = getOrderSummary();
   const checkoutUrl = getCheckoutUrl();
+
+  // Reload cart when component mounts or cart changes
+  useEffect(() => {
+    if (shopifyCart?.id) {
+      console.log('Reloading cart in CheckoutFlow:', shopifyCart.id);
+    }
+  }, [shopifyCart]);
 
   // Load products for current step based on collection ID
   useEffect(() => {
@@ -66,10 +73,11 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   };
 
   const handleProductAddToCart = async (product: any, variantId: string) => {
-    // Add product to Shopify cart
-    if (shopifyCart?.id) {
-      await ShopifyCartService.addToCart(shopifyCart.id, variantId);
-    }
+    console.log('Adding product to cart:', product.name, 'with variant:', variantId);
+    console.log('Current cart state:', shopifyCart);
+    console.log('Current step:', currentStep);
+    await updateProductSelection(product, variantId);
+    console.log('Product added successfully');
   };
 
   const handleNext = () => {
@@ -158,7 +166,15 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    Your cart is empty. Please add some products first.
+                    <p>Your cart is empty. Please add some products first.</p>
+                    <p className="text-sm mt-2">Debug: orderSummary = {JSON.stringify(orderSummary)}</p>
+                    <p className="text-sm mt-2">Debug: shopifyCart = {JSON.stringify(shopifyCart)}</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+                    >
+                      Refresh Page
+                    </button>
                   </div>
                 )}
               </div>
