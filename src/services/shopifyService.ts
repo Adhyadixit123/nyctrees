@@ -489,7 +489,6 @@ export class ShopifyCartService {
         query GetCart($id: ID!) {
           cart(id: $id) {
             id
-            checkoutUrl
             lines(first: 10) {
               edges {
                 node {
@@ -540,7 +539,18 @@ export class ShopifyCartService {
         variables: { id: cartId }
       });
 
-      return response.data?.cart || null;
+      if (response.data?.cart) {
+        // Construct the proper web checkout URL instead of using Shopify's mobile app URL
+        const storeDomain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
+        const webCheckoutUrl = `https://${storeDomain}/checkouts/${cartId}`;
+
+        return {
+          ...response.data.cart,
+          checkoutUrl: webCheckoutUrl
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error fetching cart:', error);
       return null;

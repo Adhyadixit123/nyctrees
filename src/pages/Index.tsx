@@ -15,6 +15,8 @@ type AppState = 'product' | 'checkout' | 'complete';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('product');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [totalSteps, setTotalSteps] = useState(0);
   const { updateProductSelection, setAllAddOns, isLoading, error } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -116,24 +118,45 @@ const Index = () => {
     setAppState('product');
   };
 
+  const handleStepChange = (step: number, total: number) => {
+    setCurrentStep(step);
+    setTotalSteps(total);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Brooklyn Christmas Tree Delivery
-            </h1>
+            <div className="flex items-center gap-8">
+              <h1 className="text-2xl font-bold text-black">
+                Shopify
+              </h1>
+              <nav className="hidden md:flex items-center gap-6">
+                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
+                  Products
+                </a>
+                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
+                  Collections
+                </a>
+                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
+                  About
+                </a>
+                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
+                  Contact
+                </a>
+              </nav>
+            </div>
             <div className="flex items-center gap-4">
               {/* Progress indicator for checkout flow */}
               {appState === 'checkout' && checkoutSteps.length > 0 && (
                 <div className="hidden md:flex items-center gap-3">
                   <Badge variant="secondary" className="px-3 py-1">
-                    Step 1 of {checkoutSteps.length + 1}
+                    Step {currentStep + 1} of {totalSteps}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {checkoutSteps.length} more steps to checkout
+                  <span className="text-sm text-gray-600">
+                    {totalSteps - currentStep - 1} more steps to checkout
                   </span>
                 </div>
               )}
@@ -144,7 +167,7 @@ const Index = () => {
               {appState !== 'product' && (
                 <button
                   onClick={handleBackToProduct}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm text-gray-600 hover:text-black transition-colors"
                 >
                   ← Back to Products
                 </button>
@@ -160,19 +183,19 @@ const Index = () => {
           <div className="container mx-auto px-4 py-12">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-foreground mb-4">
-                  Premium Christmas Tree Selection
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Premium Product Selection
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  Choose your perfect Christmas tree and customize your order with our curated collections of decorations and accessories.
+                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                  Choose your perfect product and customize your order with our curated collections of accessories and add-ons.
                 </p>
               </div>
 
               <div className="text-center">
                 {loadingProducts ? (
-                  <div className="text-lg">Loading your Christmas tree selection...</div>
+                  <div className="text-lg text-gray-600">Loading your product selection...</div>
                 ) : error ? (
-                  <div className="text-lg text-red-500 bg-red-50 p-4 rounded">
+                  <div className="text-lg text-red-600 bg-red-50 p-4 rounded border border-red-200">
                     Error: {error}
                   </div>
                 ) : products.length > 0 ? (
@@ -183,7 +206,7 @@ const Index = () => {
                     />
                   </div>
                 ) : (
-                  <div className="text-lg text-red-500">Failed to load product</div>
+                  <div className="text-lg text-red-600">Failed to load product</div>
                 )}
               </div>
 
@@ -198,6 +221,7 @@ const Index = () => {
             steps={checkoutSteps}
             onComplete={handleCheckoutComplete}
             onBack={handleBackToProduct}
+            onStepChange={handleStepChange}
           />
         )}
 
@@ -207,10 +231,48 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/30 mt-16">
+      <footer className="border-t border-gray-200 bg-white mt-16">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Brooklyn Christmas Tree Delivery | Built for Seamless Integration</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Products</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-gray-900">All Products</a></li>
+                <li><a href="#" className="hover:text-gray-900">Featured</a></li>
+                <li><a href="#" className="hover:text-gray-900">New Arrivals</a></li>
+                <li><a href="#" className="hover:text-gray-900">Best Sellers</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Collections</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-gray-900">Electronics</a></li>
+                <li><a href="#" className="hover:text-gray-900">Clothing</a></li>
+                <li><a href="#" className="hover:text-gray-900">Home & Garden</a></li>
+                <li><a href="#" className="hover:text-gray-900">Sports</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-gray-900">Help Center</a></li>
+                <li><a href="#" className="hover:text-gray-900">Contact Us</a></li>
+                <li><a href="#" className="hover:text-gray-900">Shipping Info</a></li>
+                <li><a href="#" className="hover:text-gray-900">Returns</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li><a href="#" className="hover:text-gray-900">About Us</a></li>
+                <li><a href="#" className="hover:text-gray-900">Careers</a></li>
+                <li><a href="#" className="hover:text-gray-900">Press</a></li>
+                <li><a href="#" className="hover:text-gray-900">Partners</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
+            <p>&copy; 2024 Shopify. All rights reserved.</p>
           </div>
         </div>
       </footer>

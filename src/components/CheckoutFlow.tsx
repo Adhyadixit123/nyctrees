@@ -14,9 +14,10 @@ interface CheckoutFlowProps {
   steps: CheckoutStep[];
   onComplete: () => void;
   onBack: () => void;
+  onStepChange?: (currentStep: number, totalSteps: number) => void;
 }
 
-export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
+export function CheckoutFlow({ steps, onComplete, onBack, onStepChange }: CheckoutFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [stepProducts, setStepProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -26,6 +27,13 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   const progress = ((currentStep + 1) / steps.length) * 100;
   const orderSummary = getOrderSummary();
   const checkoutUrl = getCheckoutUrl();
+
+  // Notify parent component of step changes
+  useEffect(() => {
+    if (onStepChange) {
+      onStepChange(currentStep, steps.length);
+    }
+  }, [currentStep, steps.length, onStepChange]);
 
   // Reload cart when component mounts or cart changes
   useEffect(() => {
@@ -82,12 +90,18 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const newStep = currentStep + 1;
+      setCurrentStep(newStep);
+      if (onStepChange) {
+        onStepChange(newStep, steps.length);
+      }
     } else {
-      // Final step - redirect to Shopify checkout
+      // Final step - redirect to Shopify web checkout
       if (checkoutUrl) {
+        console.log('Redirecting to web checkout:', checkoutUrl);
         window.location.href = checkoutUrl;
       } else {
+        console.error('No checkout URL available');
         onComplete();
       }
     }
@@ -95,7 +109,11 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      const newStep = currentStep - 1;
+      setCurrentStep(newStep);
+      if (onStepChange) {
+        onStepChange(newStep, steps.length);
+      }
     } else {
       onBack();
     }
@@ -105,25 +123,25 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   const isCartSummaryStep = currentStep === steps.length - 1;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         {/* Progress Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-gray-900">
               {isCartSummaryStep ? 'Review Your Order' : 'Customize Your Order'}
             </h1>
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="px-3 py-1">
                 Step {currentStep + 1} of {steps.length}
               </Badge>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-gray-600">
                 {steps.length - currentStep - 1} more steps to checkout
               </span>
             </div>
           </div>
           <Progress value={progress} className="h-3" />
-          <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <div className="flex justify-between text-xs text-gray-600 mt-2">
             <span>Product Selection</span>
             <span>Review & Checkout</span>
           </div>
@@ -292,7 +310,7 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
                           className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                         >
                           <ExternalLink className="w-4 h-4" />
-                          Complete Purchase
+                          Complete Purchase on {import.meta.env.VITE_SHOPIFY_STORE_DOMAIN}
                         </Button>
                       </div>
                     )}
