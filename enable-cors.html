@@ -1,0 +1,46 @@
+/**
+ * Enable CORS Anywhere Temporary Access
+ *
+ * To use cors-anywhere.herokuapp.com, you need to request temporary access first.
+ * Run this in your browser console to enable access.
+ */
+
+const enableCorsAnywhere = async () => {
+  try {
+    // First, request temporary access
+    const response = await fetch('https://cors-anywhere.herokuapp.com/corsdemo', {
+      method: 'GET',
+    });
+
+    if (response.ok) {
+      console.log('✅ CORS Anywhere access enabled!');
+      console.log('🔄 Now try your Shopify requests again.');
+
+      // Test if it works
+      const testResponse = await fetch('https://cors-anywhere.herokuapp.com/brooklyn-tres.myshopify.com/api/2025-10/graphql.json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': 'b4e113af808dbf008ab651c525f312b4'
+        },
+        body: JSON.stringify({
+          query: 'query { shop { name } }'
+        })
+      });
+
+      if (testResponse.ok) {
+        console.log('🎉 Shopify API is now accessible!');
+      } else {
+        console.log('❌ Still having issues. Status:', testResponse.status);
+      }
+    } else {
+      console.log('❌ Failed to enable CORS Anywhere access');
+    }
+  } catch (error) {
+    console.log('❌ Error enabling CORS Anywhere:', error.message);
+    console.log('📝 Please visit https://cors-anywhere.herokuapp.com/corsdemo manually');
+  }
+};
+
+// Run the function
+enableCorsAnywhere();

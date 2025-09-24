@@ -7,23 +7,15 @@ if (!storeDomain || !accessToken) {
   throw new Error('Missing Shopify environment variables');
 }
 
-// Try multiple CORS proxy services as fallbacks
-const corsProxies = [
-  'https://api.allorigins.win/raw?url=https://' + storeDomain,
-  'https://cors-anywhere.herokuapp.com/' + storeDomain,
-  'https://corsproxy.io/?' + storeDomain
-];
-
-const actualStoreDomain = `${corsProxies[0]}/api/2025-10`;
+// Use cors-anywhere.herokuapp.com as primary (it works!)
+const corsProxy = 'https://cors-anywhere.herokuapp.com';
+const actualStoreDomain = `${corsProxy}/${storeDomain}/api/2025-10`;
 
 export const shopifyClient = createStorefrontApiClient({
   storeDomain: actualStoreDomain,
   publicAccessToken: accessToken,
   apiVersion: '2025-10',
 });
-
-// Export the proxy services for potential fallback logic
-export { corsProxies };
 
 export interface ShopifyProduct {
   id: string;

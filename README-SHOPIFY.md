@@ -76,23 +76,64 @@ npm run api
 npm run dev
 ```
 
-## 🚨 IMMEDIATE TROUBLESHOOTING
+## 🚨 SOLUTION FOUND - Enable CORS Anywhere
 
-### If you're still getting CORS errors on Netlify:
+### ✅ **Working Solution Identified**
 
-1. **Check if Netlify has deployed the latest code**:
-   - Go to your Netlify dashboard
-   - Look for recent deployments
-   - Trigger a manual redeploy if needed
+Your test results show that **`cors-anywhere.herokuapp.com` works** but requires temporary access activation.
 
-2. **Test CORS proxies directly**:
-   - Open `test-cors.html` in your browser
-   - Run the test to see which proxy works
-   - Update the configuration if needed
+### **Step 1: Enable CORS Anywhere Access**
 
-3. **Try the backend API solution** (most reliable):
-   - Deploy `proxy-api.js` to Railway, Heroku, or Vercel
-   - Update the Shopify client to use your backend URL
+**Visit this URL in your browser:**
+```
+https://cors-anywhere.herokuapp.com/corsdemo
+```
+
+**Or run this in your browser console:**
+```javascript
+// Copy and paste this code into your browser console
+fetch('https://cors-anywhere.herokuapp.com/corsdemo')
+  .then(response => response.text())
+  .then(data => console.log('CORS Anywhere enabled!'));
+```
+
+### **Step 2: Test the Fix**
+
+After enabling access, your Shopify requests should work! The configuration is already updated to use `cors-anywhere.herokuapp.com`.
+
+### **Step 3: Redeploy on Netlify**
+
+1. **Go to Netlify Dashboard** → **Deploys**
+2. **Click "Trigger deploy"** → **Deploy site**
+3. **Wait for deployment to complete**
+
+### **Alternative Solutions (if CORS Anywhere fails):**
+
+#### **Option A: Deploy Backend API (Most Reliable)**
+```bash
+# Deploy proxy-api.js to Railway, Heroku, or Vercel
+# Set environment variable: SHOPIFY_ACCESS_TOKEN=your_token
+```
+
+#### **Option B: Use Different CORS Proxy**
+If CORS Anywhere stops working, try:
+```javascript
+// Update this in src/lib/shopify.ts
+const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
+const actualStoreDomain = `${corsProxy}${storeDomain}/api/2025-10`;
+```
+
+#### **Option C: Request Shopify CORS Access**
+For Shopify Plus stores, you can request CORS access for your domain.
+
+## 🔍 Test Results Analysis
+
+**From your test:**
+- ✅ `cors-anywhere.herokuapp.com` - **WORKS** (needs activation)
+- ❌ `api.allorigins.win` - Header restrictions
+- ❌ `corsproxy.io` - Header restrictions
+
+**The solution is ready!** Just enable CORS Anywhere access and redeploy.
 
 ### Quick Fix - Update Your Netlify Environment Variables
 
