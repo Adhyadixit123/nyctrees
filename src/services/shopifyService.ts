@@ -56,11 +56,49 @@ export class ShopifyProductService {
     }
   }
 
-  static async getProducts(): Promise<Product[]> {
+  static async getProductsByCollection(collectionId?: string): Promise<Product[]> {
     try {
       const query = `
-        query GetProducts {
-          products(first: 10) {
+        query GetProductsByCollection($first: Int!, $collectionId: ID) {
+          collection(id: $collectionId) {
+            products(first: $first) {
+              edges {
+                node {
+                  id
+                  title
+                  description
+                  images(first: 1) {
+                    edges {
+                      node {
+                        url
+                        altText
+                      }
+                    }
+                  }
+                  variants(first: 10) {
+                    edges {
+                      node {
+                        id
+                        title
+                        price {
+                          amount
+                          currencyCode
+                        }
+                        availableForSale
+                      }
+                    }
+                  }
+                  priceRange {
+                    minVariantPrice {
+                      amount
+                      currencyCode
+                    }
+                  }
+                }
+              }
+            }
+          }
+          products(first: $first) {
             edges {
               node {
                 id
@@ -99,17 +137,58 @@ export class ShopifyProductService {
         }
       `;
 
-      const response = await shopifyClient.request(query);
-
-      if (!response.data?.products?.edges) {
-        return [];
+      const variables: any = { first: 20 };
+      if (collectionId) {
+        variables.collectionId = collectionId;
       }
 
-      return response.data.products.edges.map((edge: any) =>
+      const response = await shopifyClient.request(query, { variables });
+
+      let products = [];
+      if (collectionId && response.data?.collection?.products?.edges) {
+        products = response.data.collection.products.edges;
+      } else if (response.data?.products?.edges) {
+        products = response.data.products.edges;
+      }
+
+      return products.map((edge: any) =>
         this.transformShopifyProduct(edge.node)
       );
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching products by collection:', error);
+      return [];
+    }
+  }
+
+  static async getCollections(): Promise<any[]> {
+    try {
+      const query = `
+        query GetCollections {
+          collections(first: 10) {
+            edges {
+              node {
+                id
+                title
+                description
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await shopifyClient.request(query);
+
+      if (!response.data?.collections?.edges) {
+        return [];
+      }
+
+      return response.data.collections.edges.map((edge: any) => edge.node);
+    } catch (error) {
+      console.error('Error fetching collections:', error);
       return [];
     }
   }

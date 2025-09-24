@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ProductCard } from '@/components/ProductCard';
 import { CheckoutFlow } from '@/components/CheckoutFlow';
 import { OrderComplete } from '@/components/OrderComplete';
+import { CartButton } from '@/components/CartButton';
 import { useCart } from '@/hooks/useCart';
 import { mockProduct, checkoutSteps, getAllAddOns } from '@/data/mockData';
 import { ShopifyProductService } from '@/services/shopifyService';
@@ -23,7 +24,7 @@ const Index = () => {
     const loadProducts = async () => {
       setLoadingProducts(true);
       try {
-        const shopifyProducts = await ShopifyProductService.getProducts();
+        const shopifyProducts = await ShopifyProductService.getProductsByCollection();
         setProducts(shopifyProducts);
       } catch (error) {
         console.error('Error loading products:', error);
@@ -40,6 +41,17 @@ const Index = () => {
   const handleAddToCart = async (product: Product, variantId: string) => {
     await updateProductSelection(product, variantId);
     setAppState('checkout');
+  };
+
+  const handleCartClick = () => {
+    setAppState('checkout');
+  };
+
+  const handleStoreClick = () => {
+    const storeDomain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
+    if (storeDomain) {
+      window.open(`https://${storeDomain}`, '_blank');
+    }
   };
 
   const handleCheckoutComplete = () => {
@@ -63,14 +75,20 @@ const Index = () => {
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               AudioTech Store
             </h1>
-            {appState !== 'product' && (
-              <button
-                onClick={handleBackToProduct}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Back to Products
-              </button>
-            )}
+            <div className="flex items-center gap-4">
+              <CartButton
+                onCartClick={handleCartClick}
+                onStoreClick={handleStoreClick}
+              />
+              {appState !== 'product' && (
+                <button
+                  onClick={handleBackToProduct}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back to Products
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -94,10 +112,15 @@ const Index = () => {
                 {loadingProducts ? (
                   <div className="text-lg">Loading products from Shopify...</div>
                 ) : products.length > 0 ? (
-                  <ProductCard
-                    product={products[0]}
-                    onAddToCart={handleAddToCart}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {products.slice(0, 6).map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onAddToCart={handleAddToCart}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="text-lg text-red-500">Failed to load products</div>
                 )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Plus, ArrowLeft, ArrowRight, Star, ExternalLink } from 'lucide-react';
 import { CheckoutStep, AddOn } from '@/types/checkout';
 import { useCart } from '@/hooks/useCart';
+import { ShopifyProductService, ShopifyCartService } from '@/services/shopifyService';
+import { ProductCard } from '@/components/ProductCard';
 
 interface CheckoutFlowProps {
   steps: CheckoutStep[];
@@ -16,12 +18,48 @@ interface CheckoutFlowProps {
 
 export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [stepProducts, setStepProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const { shopifyCart, addAddOn, removeAddOn, getOrderSummary, getCheckoutUrl, isLoading } = useCart();
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
   const orderSummary = getOrderSummary();
   const checkoutUrl = getCheckoutUrl();
+
+  // Load products for current step based on category
+  useEffect(() => {
+    const loadStepProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        // Map step categories to collection IDs or fetch by category
+        const categoryMap: { [key: string]: string } = {
+          'protection': 'gid://shopify/Collection/1', // Replace with actual collection IDs
+          'charging': 'gid://shopify/Collection/2',
+          'accessories': 'gid://shopify/Collection/3',
+          'software': 'gid://shopify/Collection/4',
+          'comfort': 'gid://shopify/Collection/5',
+          'travel': 'gid://shopify/Collection/6',
+          'warranty': 'gid://shopify/Collection/7',
+          'maintenance': 'gid://shopify/Collection/8',
+          'membership': 'gid://shopify/Collection/9',
+          'customization': 'gid://shopify/Collection/10',
+          'packaging': 'gid://shopify/Collection/11'
+        };
+
+        const collectionId = categoryMap[currentStepData.addOns[0]?.category];
+        const products = await ShopifyProductService.getProductsByCollection(collectionId);
+        setStepProducts(products.slice(0, 3)); // Show up to 3 products per step
+      } catch (error) {
+        console.error('Error loading step products:', error);
+        setStepProducts([]);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    loadStepProducts();
+  }, [currentStep, currentStepData]);
 
   const isAddOnSelected = (addOnId: string) => {
     // For now, add-ons are handled locally since Shopify doesn't have add-on concept
@@ -33,6 +71,13 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
       removeAddOn(addOnId);
     } else {
       addAddOn(addOnId);
+    }
+  };
+
+  const handleProductAddToCart = async (product: any, variantId: string) => {
+    // Add product to Shopify cart
+    if (shopifyCart?.id) {
+      await ShopifyCartService.addToCart(shopifyCart.id, variantId);
     }
   };
 
@@ -82,6 +127,21 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
                 {currentStepData.description}
               </p>
             </div>
+
+            {/* Step Products */}
+            {loadingProducts ? (
+              <div className="text-center py-8">Loading products...</div>
+            ) : stepProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {stepProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={handleProductAddToCart}
+                  />
+                ))}
+              </div>
+            ) : null}
 
             <div className="grid gap-4">
               {currentStepData.addOns.map((addOn) => (
