@@ -4,83 +4,118 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ProductCard } from '@/components/ProductCard';
 import { CheckoutFlow } from '@/components/CheckoutFlow';
-import { CartDebug } from '@/components/CartDebug';
 import { OrderComplete } from '@/components/OrderComplete';
 import { CartButton } from '@/components/CartButton';
 import { ShopifyProductService } from '@/services/shopifyService';
 import { useCart } from '@/hooks/useCart';
 import { Product, CheckoutStep } from '@/types/checkout';
+import { Menu, X, ShoppingBag, User, Search, Heart } from 'lucide-react';
 
 type AppState = 'product' | 'checkout' | 'complete';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('product');
-  const [currentStep, setCurrentStep] = useState(0);
-  const [totalSteps, setTotalSteps] = useState(0);
-  const { updateProductSelection, setAllAddOns, isLoading, error, cartId, getOrderSummary, shopifyCart } = useCart();
+  const { updateProductSelection, setAllAddOns, isLoading, error } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [checkoutSteps, setCheckoutSteps] = useState<any[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Load the specific base product from Shopify
-    const loadBaseProduct = async () => {
+    // Load the specific products from Shopify
+    const loadProducts = async () => {
       setLoadingProducts(true);
       try {
-        // Load the specific base product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7222219636816
+        // Load the first product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7222219636816
         const baseProductId = 'gid://shopify/Product/7222219636816';
         const baseProduct = await ShopifyProductService.getProduct(baseProductId);
 
+        // Load the second product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7222219309136
+        const secondProductId = 'gid://shopify/Product/7222219309136';
+        const secondProduct = await ShopifyProductService.getProduct(secondProductId);
+
+        const loadedProducts: Product[] = [];
+
         if (baseProduct) {
-          setProducts([baseProduct]);
+          loadedProducts.push(baseProduct);
+        }
+
+        if (secondProduct) {
+          loadedProducts.push(secondProduct);
+        }
+
+        if (loadedProducts.length > 0) {
+          setProducts(loadedProducts);
+          setSelectedProduct(loadedProducts[0]); // Set the first product as default
         } else {
-          console.error('Base product not found');
+          console.error('No products found');
           setProducts([]);
+          setSelectedProduct(null);
         }
       } catch (error) {
-        console.error('Error loading base product:', error);
+        console.error('Error loading products:', error);
         setProducts([]);
+        setSelectedProduct(null);
       } finally {
         setLoadingProducts(false);
       }
     };
 
-    loadBaseProduct();
+    loadProducts();
   }, []);
 
   useEffect(() => {
-    // Create specific checkout steps based on the provided collection URLs
+    // Create the 5-step checkout flow (skip tree selection since it's done on main page)
     const createCheckoutSteps = async () => {
       try {
-        // Define the specific collections for each step
-        const collections = [
+        // Define the 6 specific checkout steps (including order summary)
+        const steps = [
           {
-            id: 'gid://shopify/Collection/168930279504', // Second page collection
-            title: 'Essential Accessories',
-            description: 'Complete your setup with these essential accessories'
+            id: 1,
+            title: 'Tree Stand',
+            description: 'Select a sturdy tree stand for your tree',
+            addOns: [],
+            collectionId: 'gid://shopify/Collection/155577745488'
           },
           {
-            id: 'gid://shopify/Collection/267463098448', // Third page collection
-            title: 'Audio Enhancement',
-            description: 'Enhance your listening experience'
+            id: 2,
+            title: 'Tree Installation',
+            description: 'Professional tree installation services',
+            addOns: [],
+            collectionId: null
           },
           {
-            id: 'gid://shopify/Collection/169354854480', // Fourth page collection
-            title: 'Care & Maintenance',
-            description: 'Keep your headphones in perfect condition'
+            id: 3,
+            title: 'Certificate of Insurance',
+            description: 'Insurance certificate for your tree installation',
+            addOns: [],
+            collectionId: null
+          },
+          {
+            id: 4,
+            title: 'Delivery Date',
+            description: 'Choose your preferred delivery date',
+            addOns: [],
+            collectionId: null
+          },
+          {
+            id: 5,
+            title: 'Delivery Date Time Notes',
+            description: 'Specify delivery time preferences and special notes',
+            addOns: [],
+            collectionId: null
+          },
+          {
+            id: 6,
+            title: 'Order Summary',
+            description: 'Review your selections before proceeding to checkout',
+            addOns: [],
+            collectionId: null
           }
         ];
 
-        // Create checkout steps based on these specific collections
-        const dynamicSteps = collections.map((collection, index) => ({
-          id: index + 1,
-          title: collection.title,
-          description: collection.description,
-          addOns: [], // Will be populated from the collection
-          collectionId: collection.id
-        }));
-
-        setCheckoutSteps(dynamicSteps);
+        setCheckoutSteps(steps);
       } catch (error) {
         console.error('Error creating checkout steps:', error);
         setCheckoutSteps([]);
@@ -90,20 +125,13 @@ const Index = () => {
     createCheckoutSteps();
   }, []);
 
+  const handleProductChange = (product: Product) => {
+    setSelectedProduct(product);
+  };
+
   const handleAddToCart = async (product: Product, variantId: string) => {
-    try {
-      const success = await updateProductSelection(product, variantId);
-      if (success) {
-        setAppState('checkout');
-      } else {
-        console.error('Failed to add product to cart');
-        // Show error message to user
-        alert('Failed to add product to cart. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error adding product to cart:', error);
-      alert('Error adding product to cart. Please try again.');
-    }
+    await updateProductSelection(product, variantId);
+    setAppState('checkout');
   };
 
   const handleCartClick = () => {
@@ -129,122 +157,51 @@ const Index = () => {
     setAppState('product');
   };
 
-  const handleStepChange = (step: number, total: number) => {
-    setCurrentStep(step);
-    setTotalSteps(total);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-border bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-bold text-black">
-                Shopify
-              </h1>
-              <nav className="hidden md:flex items-center gap-6">
-                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
-                  Products
-                </a>
-                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
-                  Collections
-                </a>
-                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
-                  About
-                </a>
-                <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">
-                  Contact
-                </a>
-              </nav>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Progress indicator for checkout flow */}
-              {appState === 'checkout' && checkoutSteps.length > 0 && (
-                <div className="hidden md:flex items-center gap-3">
-                  <Badge variant="secondary" className="px-3 py-1">
-                    Step {currentStep + 1} of {totalSteps}
-                  </Badge>
-                  <span className="text-sm text-gray-600">
-                    {totalSteps - currentStep - 1} more steps to checkout
-                  </span>
-                </div>
-              )}
-              <CartButton
-                onCartClick={handleCartClick}
-                onStoreClick={handleStoreClick}
-              />
-              {appState !== 'product' && (
-                <button
-                  onClick={handleBackToProduct}
-                  className="text-sm text-gray-600 hover:text-black transition-colors"
-                >
-                  ← Back to Products
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main>
+    <div className="min-h-screen bg-white w-full">
+      {/* Main Content - iframe friendly, no header/footer, no side paddings */}
+      <main className="w-full bg-white">
         {appState === 'product' && (
-          <div className="container mx-auto px-4 py-12">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Premium Product Selection
-                </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                  Choose your perfect product and customize your order with our curated collections of accessories and add-ons.
-                </p>
-              </div>
-
+          <div className="w-full py-4">
+            <div className="w-full">
               <div className="text-center">
                 {loadingProducts ? (
-                  <div className="text-lg text-gray-600">Loading your product selection...</div>
+                  <div className="text-lg text-gray-600">Loading your Christmas tree selection...</div>
                 ) : error ? (
-                  <div className="text-lg text-red-600 bg-red-50 p-4 rounded border border-red-200">
+                  <div className="text-lg text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
                     Error: {error}
                   </div>
                 ) : products.length > 0 ? (
-                  <div className="max-w-md mx-auto">
+                  <div className="w-full flex justify-center">
                     <ProductCard
-                      product={products[0]}
+                      product={selectedProduct || products[0]}
                       onAddToCart={handleAddToCart}
+                      availableProducts={products}
+                      showBaseProductSelector={true}
                     />
                   </div>
                 ) : (
                   <div className="text-lg text-red-600">Failed to load product</div>
                 )}
               </div>
-
-              {/* Debug Panel */}
-              <CartDebug />
             </div>
           </div>
         )}
 
         {appState === 'checkout' && checkoutSteps.length > 0 && (
-          <div>
-            {/* Debug: Show cart state when entering checkout */}
-            <div className="fixed top-20 right-4 bg-white border border-gray-300 p-4 rounded shadow-lg z-50 max-w-sm">
-              <h4 className="font-bold text-sm mb-2">Cart Debug Info:</h4>
-              <p className="text-xs">Cart ID: {cartId || 'None'}</p>
-              <p className="text-xs">Cart Items: {getOrderSummary()?.items?.length || 0}</p>
-              <p className="text-xs">Loading: {isLoading ? 'Yes' : 'No'}</p>
-              <p className="text-xs">Error: {error || 'None'}</p>
-              <p className="text-xs">Shopify Cart: {shopifyCart ? 'Loaded' : 'Not loaded'}</p>
-            </div>
-            <CheckoutFlow
-              steps={checkoutSteps}
-              onComplete={handleCheckoutComplete}
-              onBack={handleBackToProduct}
-              onStepChange={handleStepChange}
-            />
-          </div>
+          <CheckoutFlow
+            steps={checkoutSteps}
+            onComplete={handleCheckoutComplete}
+            onBack={handleBackToProduct}
+          />
         )}
 
         {appState === 'complete' && (
@@ -252,52 +209,7 @@ const Index = () => {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Products</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">All Products</a></li>
-                <li><a href="#" className="hover:text-gray-900">Featured</a></li>
-                <li><a href="#" className="hover:text-gray-900">New Arrivals</a></li>
-                <li><a href="#" className="hover:text-gray-900">Best Sellers</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Collections</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">Electronics</a></li>
-                <li><a href="#" className="hover:text-gray-900">Clothing</a></li>
-                <li><a href="#" className="hover:text-gray-900">Home & Garden</a></li>
-                <li><a href="#" className="hover:text-gray-900">Sports</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">Help Center</a></li>
-                <li><a href="#" className="hover:text-gray-900">Contact Us</a></li>
-                <li><a href="#" className="hover:text-gray-900">Shipping Info</a></li>
-                <li><a href="#" className="hover:text-gray-900">Returns</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">About Us</a></li>
-                <li><a href="#" className="hover:text-gray-900">Careers</a></li>
-                <li><a href="#" className="hover:text-gray-900">Press</a></li>
-                <li><a href="#" className="hover:text-gray-900">Partners</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
-            <p>&copy; 2024 Shopify. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* No footer in iframe mode */}
     </div>
   );
 };

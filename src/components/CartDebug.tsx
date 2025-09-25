@@ -10,17 +10,9 @@ export function CartDebug() {
   const testCartCreation = async () => {
     setIsTesting(true);
     try {
-      // Get a valid product variant ID from the store
-      const testVariantId = await ShopifyProductService.getFirstAvailableVariantId();
+      // Use a known working variant ID for testing
+      const testVariantId = 'gid://shopify/ProductVariant/41360398483536';
       console.log('Testing cart creation with variant ID:', testVariantId);
-
-      if (!testVariantId) {
-        setDebugInfo({
-          error: 'No available product variants found',
-          timestamp: new Date().toISOString()
-        });
-        return;
-      }
 
       const cartId = await ShopifyCartService.createCart(testVariantId, 1);
       console.log('Test cart creation result:', cartId);

@@ -3,18 +3,50 @@ import { Product, AddOn } from '@/types/checkout';
 import { ShopifyCartService } from '@/services/shopifyService';
 
 export function useCart() {
-  const [cartId, setCartId] = useState<string | null>(null);
-  const [shopifyCart, setShopifyCart] = useState<any>(null);
+  const [cartId, setCartId] = useState<string | null>(() => {
+    // Try to get cart ID from localStorage first
+    const savedCartId = localStorage.getItem('shopify_cart_id');
+    return savedCartId || null;
+  });
+  const [shopifyCart, setShopifyCart] = useState<any>(() => {
+    // Try to get cart data from localStorage first
+    const savedCartData = localStorage.getItem('shopify_cart_data');
+    if (savedCartData) {
+      try {
+        return JSON.parse(savedCartData);
+      } catch (error) {
+        console.error('Error parsing saved cart data:', error);
+        return null;
+      }
+    }
+    return null;
+  });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [allAddOns, setAllAddOns] = useState<AddOn[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to save cart data to localStorage
+  const saveCartData = useCallback((cartId: string | null, cartData: any) => {
+    if (cartId) {
+      localStorage.setItem('shopify_cart_id', cartId);
+    } else {
+      localStorage.removeItem('shopify_cart_id');
+    }
+
+    if (cartData) {
+      localStorage.setItem('shopify_cart_data', JSON.stringify(cartData));
+    } else {
+      localStorage.removeItem('shopify_cart_data');
+    }
+  }, []);
 
   const loadCart = useCallback(async (id: string) => {
     try {
       const cart = await ShopifyCartService.getCart(id);
       if (cart) {
         setShopifyCart(cart);
+        saveCartData(id, cart);
         setError(null);
       } else {
         setError('Failed to load cart');
@@ -23,7 +55,7 @@ export function useCart() {
       console.error('Error loading cart:', error);
       setError('Error loading cart');
     }
-  }, []);
+  }, [saveCartData]);
 
   const updateProductSelection = useCallback(async (product: Product, variantId: string) => {
     setSelectedProduct(product);
@@ -45,14 +77,13 @@ export function useCart() {
         console.log('Adding to existing cart:', cartId);
         const success = await ShopifyCartService.addToCart(cartId, actualVariantId, 1);
         if (success) {
-          console.log('Product added to cart successfully');
+          console.log('Product added successfully, refreshing cart data...');
+          // Add a small delay to ensure the cart is updated on Shopify's side
+          await new Promise(resolve => setTimeout(resolve, 500));
           await loadCart(cartId);
-          console.log('Cart reloaded after adding product');
-          return true; // Return success
+          console.log('Cart data refreshed successfully');
         } else {
-          console.error('Failed to add product to cart');
           setError('Failed to add product to cart');
-          return false; // Return failure
         }
       } else {
         console.log('Creating new cart...');
@@ -60,23 +91,21 @@ export function useCart() {
         if (newCartId) {
           console.log('New cart created:', newCartId);
           setCartId(newCartId);
+          // Add a small delay to ensure the cart is created on Shopify's side
+          await new Promise(resolve => setTimeout(resolve, 500));
           await loadCart(newCartId);
-          console.log('Cart loaded after creation');
-          return true; // Return success
+          console.log('Cart data loaded successfully');
         } else {
-          console.error('Failed to create cart');
           setError('Failed to create cart');
-          return false; // Return failure
         }
       }
     } catch (error: any) {
       console.error('Error updating product selection:', error);
       setError(error.message || 'Error updating product selection');
-      return false; // Return failure
     } finally {
       setIsLoading(false);
     }
-  }, [cartId, loadCart]);
+  }, [cartId, loadCart, saveCartData]);
 
   const addAddOn = useCallback(async (addOnId: string) => {
     // For now, we'll handle add-ons locally since Shopify doesn't have add-on concept
@@ -89,6 +118,72 @@ export function useCart() {
     console.log('Remove add-on functionality would be implemented here:', addOnId);
   }, [cartId, shopifyCart]);
 
+  const updateCartItem = useCallback(async (lineId: string, quantity: number) => {
+    if (!cartId) {
+      setError('No cart available');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('Updating cart item - cartId:', cartId, 'lineId:', lineId, 'quantity:', quantity);
+
+      const success = await ShopifyCartService.updateCartItem(cartId, lineId, quantity);
+      if (success) {
+        console.log('Cart item updated successfully, refreshing cart data...');
+        // Add a small delay to ensure the cart is updated on Shopify's side
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadCart(cartId);
+        console.log('Cart data refreshed successfully');
+        return true;
+      } else {
+        setError('Failed to update cart item');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Error updating cart item:', error);
+      setError(error.message || 'Error updating cart item');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [cartId, loadCart, saveCartData]);
+
+  const removeFromCart = useCallback(async (lineId: string) => {
+    if (!cartId) {
+      setError('No cart available');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('Removing from cart - cartId:', cartId, 'lineId:', lineId);
+
+      const success = await ShopifyCartService.removeFromCart(cartId, lineId);
+      if (success) {
+        console.log('Cart item removed successfully, refreshing cart data...');
+        // Add a small delay to ensure the cart is updated on Shopify's side
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadCart(cartId);
+        console.log('Cart data refreshed successfully');
+        return true;
+      } else {
+        setError('Failed to remove cart item');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Error removing cart item:', error);
+      setError(error.message || 'Error removing cart item');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [cartId, loadCart, saveCartData]);
+
   const calculateTotal = useCallback(() => {
     if (!shopifyCart) return 0;
     return parseFloat(shopifyCart.cost?.totalAmount?.amount || '0');
@@ -98,9 +193,12 @@ export function useCart() {
     if (!shopifyCart) return null;
 
     const items = shopifyCart.lines?.edges?.map((edge: any) => ({
+      id: edge.node.id,
       name: `${edge.node.merchandise.product.title} - ${edge.node.merchandise.title}`,
       price: parseFloat(edge.node.merchandise.price.amount) * edge.node.quantity,
-      quantity: edge.node.quantity
+      quantity: edge.node.quantity,
+      lineId: edge.node.id,
+      variantId: edge.node.merchandise.id
     })) || [];
 
     const subtotal = parseFloat(shopifyCart.cost?.subtotalAmount?.amount || '0');
@@ -126,6 +224,9 @@ export function useCart() {
     updateProductSelection,
     addAddOn,
     removeAddOn,
+    updateCartItem,
+    removeFromCart,
+    loadCart,
     calculateTotal,
     getOrderSummary,
     getCheckoutUrl,

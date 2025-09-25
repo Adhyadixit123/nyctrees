@@ -32,6 +32,7 @@ export interface CartItem {
 }
 
 export interface CheckoutStep {
+  collectionId: any;
   id: number;
   title: string;
   description: string;
