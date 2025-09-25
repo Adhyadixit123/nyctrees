@@ -125,6 +125,38 @@ const Index = () => {
     createCheckoutSteps();
   }, []);
 
+  // Auto-scroll to top when component mounts (page refresh)
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
+  }, []);
+
+  // Iframe height adjustment for Shopify embedding
+  useEffect(() => {
+    const sendHeight = () => {
+      const height = document.body.scrollHeight;
+      window.parent.postMessage({ type: 'setHeight', height }, '*');
+    };
+
+    // Send height on load
+    window.addEventListener('load', sendHeight);
+
+    // Send height on resize or content changes
+    window.addEventListener('resize', sendHeight);
+
+    // Send initial height
+    sendHeight();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('load', sendHeight);
+      window.removeEventListener('resize', sendHeight);
+    };
+  }, []);
+
   const handleProductChange = (product: Product) => {
     setSelectedProduct(product);
   };

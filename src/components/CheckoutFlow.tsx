@@ -71,11 +71,13 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
     loadStepProducts();
   }, [currentStep, currentStepData, steps]);
 
-  // Auto-scroll to current step when it changes
+  // Auto-scroll to top when step changes (proceed to next step)
   useEffect(() => {
-    // Scroll to current step when component mounts or step changes
-    const timer = setTimeout(() => scrollToStep(currentStep), 150);
-    return () => clearTimeout(timer);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
   }, [currentStep]);
 
   // Scroll to step function (accessible to onClick handlers)
@@ -105,6 +107,13 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
       orderSummaryItems: orderSummary?.items?.length || 0
     });
   }, [shopifyCart, orderSummary]);
+
+  // Auto-scroll to current step in mobile slider when step changes
+  useEffect(() => {
+    // Scroll to current step in mobile slider when step changes
+    const timer = setTimeout(() => scrollToStep(currentStep), 150);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   const isAddOnSelected = (addOnId: string) => {
     // For now, add-ons are handled locally since Shopify doesn't have add-on concept
