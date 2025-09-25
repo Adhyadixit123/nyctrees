@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,10 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
   const [stepProducts, setStepProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const { shopifyCart, addAddOn, removeAddOn, getOrderSummary, getCheckoutUrl, isLoading, updateProductSelection, loadCart, updateCartItem, removeFromCart } = useCart();
+
+  // Refs for mobile slider auto-scroll
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const currentStepRef = useRef<HTMLDivElement>(null);
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -66,6 +70,31 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
 
     loadStepProducts();
   }, [currentStep, currentStepData, steps]);
+
+  // Auto-scroll to current step when it changes
+  useEffect(() => {
+    // Scroll to current step when component mounts or step changes
+    const timer = setTimeout(() => scrollToStep(currentStep), 150);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
+  // Scroll to step function (accessible to onClick handlers)
+  const scrollToStep = (stepIndex: number) => {
+    if (currentStepRef.current && sliderRef.current) {
+      const stepElement = currentStepRef.current;
+      const sliderElement = sliderRef.current;
+
+      // Calculate the position to scroll to (center the current step)
+      const stepWidth = 80; // min-w-[80px]
+      const gap = 8; // gap-2 = 0.5rem = 8px
+      const scrollPosition = stepIndex * (stepWidth + gap) - (sliderElement.clientWidth / 2) + (stepWidth / 2);
+
+      sliderElement.scrollTo({
+        left: Math.max(0, scrollPosition),
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // Debug: Log cart state changes
   useEffect(() => {
@@ -127,7 +156,9 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const newStep = currentStep + 1;
+      setCurrentStep(newStep);
+      // Auto-scroll will happen via useEffect
     } else {
       // Final step - redirect to Shopify checkout
       if (checkoutUrl) {
@@ -140,7 +171,9 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      const newStep = currentStep - 1;
+      setCurrentStep(newStep);
+      // Auto-scroll will happen via useEffect
     } else {
       onBack();
     }
@@ -168,24 +201,36 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
                 Step {currentStep + 1} of {steps.length}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {steps.length - currentStep - 1} more steps to checkout
+                {steps.length - currentStep - 1 > 0 ? `${steps.length - currentStep - 1} more steps to checkout` : 'Final step'}
               </span>
             </div>
           </div>
-          <Progress value={((currentStep + 1) / steps.length) * 100} className="h-3" />
+          <Progress value={(currentStep / (steps.length - 1)) * 100} className="h-3" />
 
           {/* Desktop: Show numbered step names */}
           <div className="hidden md:flex justify-between text-xs text-muted-foreground mt-2">
-            {getStepNames().map((stepName, index) => (
-              <div key={index} className="flex flex-col items-center">
-                <span className={`font-bold text-sm ${index <= currentStep ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {index + 1}
-                </span>
-                <span className={`text-xs mt-1 ${index <= currentStep ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {stepName}
-                </span>
-              </div>
-            ))}
+            {getStepNames().map((stepName, index) => {
+              const isCompleted = index < currentStep;
+              const isCurrent = index === currentStep;
+              const isUpcoming = index > currentStep;
+
+              return (
+                <div key={index} className="flex flex-col items-center">
+                  <span className={`font-bold text-sm ${
+                    isCompleted ? 'text-primary' :
+                    isCurrent ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {index + 1}
+                  </span>
+                  <span className={`text-xs mt-1 ${
+                    isCompleted ? 'text-primary' :
+                    isCurrent ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {stepName}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Mobile: Show horizontal slider with arrows */}
@@ -193,7 +238,12 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
             <div className="relative">
               {/* Left Arrow */}
               <button
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                onClick={() => {
+                  const newStep = Math.max(0, currentStep - 1);
+                  setCurrentStep(newStep);
+                  // Auto-scroll to the new current step
+                  setTimeout(() => scrollToStep(newStep), 100);
+                }}
                 disabled={currentStep === 0}
                 className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
@@ -201,28 +251,51 @@ export function CheckoutFlow({ steps, onComplete, onBack }: CheckoutFlowProps) {
               </button>
 
               {/* Slider Container */}
-              <div className="overflow-x-auto scrollbar-hide mx-10">
+              <div
+                ref={sliderRef}
+                className="overflow-x-auto scrollbar-hide mx-10"
+                onScroll={() => {
+                  // Optional: Add scroll-based step detection if needed
+                }}
+              >
                 <div className="flex gap-2 pb-2 px-2">
-                  {getStepNames().map((stepName, index) => (
-                    <div key={index} className="flex-shrink-0 flex flex-col items-center min-w-[80px]">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1 ${
-                        index <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {index + 1}
+                  {getStepNames().map((stepName, index) => {
+                    const isCompleted = index < currentStep;
+                    const isCurrent = index === currentStep;
+                    const isUpcoming = index > currentStep;
+
+                    return (
+                      <div
+                        key={index}
+                        ref={index === currentStep ? currentStepRef : null}
+                        className="flex-shrink-0 flex flex-col items-center min-w-[80px]"
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1 transition-colors duration-200 ${
+                          isCompleted ? 'bg-primary text-primary-foreground' :
+                          isCurrent ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <span className={`text-xs text-center leading-tight px-1 transition-colors duration-200 ${
+                          isCompleted ? 'text-primary font-medium' :
+                          isCurrent ? 'text-primary font-medium' : 'text-muted-foreground'
+                        }`}>
+                          {stepName}
+                        </span>
                       </div>
-                      <span className={`text-xs text-center leading-tight px-1 ${
-                        index <= currentStep ? 'text-primary font-medium' : 'text-muted-foreground'
-                      }`}>
-                        {stepName}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Right Arrow */}
               <button
-                onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                onClick={() => {
+                  const newStep = Math.min(steps.length - 1, currentStep + 1);
+                  setCurrentStep(newStep);
+                  // Auto-scroll to the new current step
+                  setTimeout(() => scrollToStep(newStep), 100);
+                }}
                 disabled={currentStep === steps.length - 1}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
