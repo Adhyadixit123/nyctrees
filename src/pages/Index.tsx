@@ -17,7 +17,7 @@ const Index = () => {
   const [appState, setAppState] = useState<AppState>('product');
   const [currentStep, setCurrentStep] = useState(0);
   const [totalSteps, setTotalSteps] = useState(0);
-  const { updateProductSelection, setAllAddOns, isLoading, error } = useCart();
+  const { updateProductSelection, setAllAddOns, isLoading, error, cartId, getOrderSummary, shopifyCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [checkoutSteps, setCheckoutSteps] = useState<any[]>([]);
@@ -91,8 +91,19 @@ const Index = () => {
   }, []);
 
   const handleAddToCart = async (product: Product, variantId: string) => {
-    await updateProductSelection(product, variantId);
-    setAppState('checkout');
+    try {
+      const success = await updateProductSelection(product, variantId);
+      if (success) {
+        setAppState('checkout');
+      } else {
+        console.error('Failed to add product to cart');
+        // Show error message to user
+        alert('Failed to add product to cart. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error adding product to cart:', error);
+      alert('Error adding product to cart. Please try again.');
+    }
   };
 
   const handleCartClick = () => {
@@ -217,12 +228,23 @@ const Index = () => {
         )}
 
         {appState === 'checkout' && checkoutSteps.length > 0 && (
-          <CheckoutFlow
-            steps={checkoutSteps}
-            onComplete={handleCheckoutComplete}
-            onBack={handleBackToProduct}
-            onStepChange={handleStepChange}
-          />
+          <div>
+            {/* Debug: Show cart state when entering checkout */}
+            <div className="fixed top-20 right-4 bg-white border border-gray-300 p-4 rounded shadow-lg z-50 max-w-sm">
+              <h4 className="font-bold text-sm mb-2">Cart Debug Info:</h4>
+              <p className="text-xs">Cart ID: {cartId || 'None'}</p>
+              <p className="text-xs">Cart Items: {getOrderSummary()?.items?.length || 0}</p>
+              <p className="text-xs">Loading: {isLoading ? 'Yes' : 'No'}</p>
+              <p className="text-xs">Error: {error || 'None'}</p>
+              <p className="text-xs">Shopify Cart: {shopifyCart ? 'Loaded' : 'Not loaded'}</p>
+            </div>
+            <CheckoutFlow
+              steps={checkoutSteps}
+              onComplete={handleCheckoutComplete}
+              onBack={handleBackToProduct}
+              onStepChange={handleStepChange}
+            />
+          </div>
         )}
 
         {appState === 'complete' && (

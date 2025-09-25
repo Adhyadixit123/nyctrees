@@ -173,7 +173,7 @@ export function CheckoutFlow({ steps, onComplete, onBack, onStepChange }: Checko
                         <div className="flex justify-between items-center">
                           <div>
                             <h4 className="font-medium">{item.name}</h4>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-gray-600">
                               Quantity: {item.quantity}
                             </p>
                           </div>
@@ -181,15 +181,30 @@ export function CheckoutFlow({ steps, onComplete, onBack, onStepChange }: Checko
                         </div>
                       </Card>
                     ))}
+                    <div className="pt-4 border-t">
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal:</span>
+                        <span>${orderSummary.subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Tax:</span>
+                        <span>${orderSummary.tax.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg pt-2">
+                        <span>Total:</span>
+                        <span>${orderSummary.total.toFixed(2)}</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-gray-600">
                     <p>Your cart is empty. Please add some products first.</p>
                     <p className="text-sm mt-2">Debug: orderSummary = {JSON.stringify(orderSummary)}</p>
                     <p className="text-sm mt-2">Debug: shopifyCart = {JSON.stringify(shopifyCart)}</p>
+                    <p className="text-sm mt-2">Debug: cartId = {cartId}</p>
                     <button
                       onClick={() => window.location.reload()}
-                      className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+                      className="mt-4 px-4 py-2 bg-gray-600 text-white rounded"
                     >
                       Refresh Page
                     </button>

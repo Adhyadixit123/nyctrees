@@ -48,9 +48,11 @@ export function useCart() {
           console.log('Product added to cart successfully');
           await loadCart(cartId);
           console.log('Cart reloaded after adding product');
+          return true; // Return success
         } else {
           console.error('Failed to add product to cart');
           setError('Failed to add product to cart');
+          return false; // Return failure
         }
       } else {
         console.log('Creating new cart...');
@@ -60,14 +62,17 @@ export function useCart() {
           setCartId(newCartId);
           await loadCart(newCartId);
           console.log('Cart loaded after creation');
+          return true; // Return success
         } else {
           console.error('Failed to create cart');
           setError('Failed to create cart');
+          return false; // Return failure
         }
       }
     } catch (error: any) {
       console.error('Error updating product selection:', error);
       setError(error.message || 'Error updating product selection');
+      return false; // Return failure
     } finally {
       setIsLoading(false);
     }
