@@ -27,11 +27,11 @@ const Index = () => {
     const loadProducts = async () => {
       setLoadingProducts(true);
       try {
-        // Load the first product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7222219636816
+        // Load the first product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7119040610384
         const baseProductId = 'gid://shopify/Product/7222219636816';
         const baseProduct = await ShopifyProductService.getProduct(baseProductId);
 
-        // Load the second product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7222219309136
+        // Load the second product: https://admin.shopify.com/store/brooklyn-christmas-tree-delivery/products/7119041560656
         const secondProductId = 'gid://shopify/Product/7222219309136';
         const secondProduct = await ShopifyProductService.getProduct(secondProductId);
 
