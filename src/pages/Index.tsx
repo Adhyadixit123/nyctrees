@@ -174,7 +174,29 @@ const Index = () => {
             <div className="w-full">
               <div className="text-center">
                 {loadingProducts ? (
-                  <div className="text-lg text-gray-600">Loading your Christmas tree selection...</div>
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="w-64 h-64 mb-4 rounded-lg overflow-hidden shadow-lg">
+                      <img
+                        src="/WhatsApp Image 2025-09-25 at 15.54.25_8ce0d4fb.jpg"
+                        alt="Loading Christmas tree selection..."
+                        className="w-full h-full object-cover opacity-30"
+                        onError={(e) => {
+                          // Fallback to text if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          const fallbackText = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallbackText) {
+                            fallbackText.style.display = 'block';
+                          }
+                        }}
+                      />
+                      <div className="hidden text-lg text-gray-600 text-center p-4">
+                        Loading your Christmas tree selection...
+                      </div>
+                    </div>
+                    <div className="text-lg text-gray-600 text-center">
+                      Loading your Christmas tree selection...
+                    </div>
+                  </div>
                 ) : error ? (
                   <div className="text-lg text-red-600 bg-red-50 p-4 rounded-lg border border-red-200">
                     Error: {error}
